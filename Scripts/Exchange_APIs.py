@@ -4,6 +4,7 @@ import time
 import hashlib
 import hmac
 import datetime
+import os
 
 def krakenDataCollector(pair):
 
@@ -61,6 +62,9 @@ def getValrSignature(api_key_secret, timestamp, verb, path, body=""):
 
     return signature
 
+key = ['ddd17ab3f9f1ace51d1b1fc6df2cb7927b83ef9d1c0e56abefe784f96f924dea']
+secret = ['7ca706ba6992100dbd56fcd413972ad0e4efcc93c2b352ddf2dae58bb4f66f14']
+
 
 #Kraken parameters
 krakenPair = 'XXBTZUSD' # pairs: 'XXBTZUSD',
@@ -70,10 +74,16 @@ valrPair = 'BTCZAR'
 valrStartTime = pd.to_datetime('2021-01-01').isoformat()
 valrEndTime = datetime.datetime.now().isoformat()
 
-apiDf = pd.read_csv('Data/.API')
+#apiDf = pd.read_csv(f'{os.getcwd()}/Data/.API')
+
+#apiDf = pd.read_csv('/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Scripts/Data/.API')
+apiDf = pd.read_csv('/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Data/.API')
 
 API_Key = apiDf.iloc[0]['API_Key']
 API_Secret = apiDf.iloc[0]['API_Secret']
+
+print(API_Key)
+print(API_Secret)
 
 
 krakenDataCollector(krakenPair)
