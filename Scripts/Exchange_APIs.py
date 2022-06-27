@@ -19,7 +19,6 @@ def krakenDataCollector(pair):
 
     return krakendf
 
-
 def valrDataCollector(startTime,endTime,pair,API_Key):
 
     path = f'/v1/marketdata/{pair}/tradehistory?startTime={startTime}&endTime={endTime}'
