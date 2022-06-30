@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+import pytz
 
 filePath = '/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Data/VALR/OHCL_Data_BTC_ETH_SOL'
 fileList = os.listdir(filePath)
@@ -15,12 +16,12 @@ for i in fileList:
 df.columns = ['Timestamp', 'Market', 'Open', 'High', 'Low', 'Close', 'Volume', 'Quote_Volume']
 df.drop_duplicates(inplace=True,ignore_index=True)
 
+#setup timestamps to UTC time
 df['Timestamp'] = pd.to_datetime(df['Timestamp'], format='%Y/%m/%d, %H:%M')
+SA_timezone = pytz.timezone('Africa/Johannesburg')
+df['Timestamp'] = df['Timestamp'].dt.tz_localize(SA_timezone).dt.tz_convert(pytz.utc)
 
-print(df['Market'].unique())
-
-df = df[~(df['Timestamp'] < '2021-01-01')]
-print(len(df))
+df = df[~(df['Timestamp'] < '2019-01-01')]
 
 
 btcDf = df[(df['Market'] == 'BTCZAR')]
