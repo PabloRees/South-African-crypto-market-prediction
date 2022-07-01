@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import pytz
+import matplotlib.pyplot as plt
+
 
 def Y_cat_format(df,YVar,binary:bool):
     Y_mean = np.mean(df[YVar])
@@ -86,7 +88,7 @@ def normalize(method,df,variable:str):
         method = 'NormDist'
         print('Value Error Warning: Invalid normalization method selected - using NormDist')
 
-    if method == 'NormDIst':
+    if method == 'NormDist':
         std = np.std(df[variable])
         mean = np.mean(df[variable])
         df[f'{variable}_norm'] = df[variable].map(lambda x: ((x-mean)/std) )
@@ -104,13 +106,43 @@ def normalize(method,df,variable:str):
 
     return df
 
-def trim_outliers(df,variable):
+def trim_outliers(df,variable,range:list[int]):
 
     df['varCat'] = Y_cat_format(df,variable,False)
-    df = df[df['varCat'] < 6]
-    df = df[df['varCat'] > 3]
+    df = df[df['varCat'] < range[1]]
+    df = df[df['varCat'] > range[0]]
 
     df.drop(columns = ['varCat'])
 
     return df
 
+def trim_middle(df,variable,range:list[int],timevar:str):
+
+    df['varCat'] = Y_cat_format(df,variable,False)
+    df1 = df[df['varCat'] < range[0]]
+    df2 = df[df['varCat'] > range[1]]
+
+    df = pd.concat([df1, df2], axis=0)
+    df = df.sort_values(by=timevar,axis=0,ascending=True)
+
+    df.drop(columns = ['varCat'])
+
+    return df
+
+
+def plotOverTime(df,var):
+    df['Day'] = df['Timestamp'].map(lambda x: str(x).split(' ')[-1])
+    df = df[df['Day'] == '00:00:00+00:00']
+    plt.plot(df['Timestamp'], df[var])
+    plt.title(f'{var} over time')
+    plt.xlabel('Date')
+    plt.ylabel(f'{var}')
+    plt.show()
+
+def get_difference(df,timevar, variable, label):
+
+    df = df.sort_values(by=timevar,axis=0,ascending=True)
+    df = create_lags(df,timevar,variable,[1])
+    df[f'{label}Diff'] = 100*(round(1000*df[variable]) - round(1000*df[f'{variable}_1']))/round(1000*df[f'{variable}_1'])
+
+    return df
