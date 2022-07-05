@@ -4,6 +4,7 @@ from Std_fin_ts_data_setup import create_lags, create_moving_average, set_time_p
     ,trim_outliers, Y_cat_format, plotOverTime, get_difference, trim_middle
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
+from sklearn.linear_model import LinearRegression
 
 SOLZAR = pd.read_csv('/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Data/VALR/SOLZAR.csv')
 ETHZAR = pd.read_csv('/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Data/VALR/ETHZAR.csv')
@@ -30,7 +31,28 @@ def get_cbar(data, ax=None,
 
     return cbar
 
-def categorical_heat_map(mixedDf,var1,var2):
+def reg_and_scatter_plot(df,Xvar,Yvar,savePath):
+
+    X = df[Xvar].to_numpy().reshape(-1, 1)
+    Y = df[Yvar].to_numpy().reshape(-1, 1)
+
+    reg = LinearRegression(fit_intercept=False, n_jobs=-1)
+    reg.fit(X, Y)
+
+    print(f'Regressing: {Yvar} on {Xvar}\n'
+          f'R-squared : {reg.score(X, Y)} , Coefficient: {reg.coef_}\n')
+
+    plt.plot(X, reg.predict(X), color='r')
+
+    plt.scatter(df[Xvar], df[Yvar],cmap='cool')
+    plt.xlabel(Xvar)
+    plt.ylabel(Yvar)
+
+    plt.savefig(savePath)
+
+    plt.show()
+
+def categorical_heat_map(mixedDf,var1,var2,savepath):
 
     nrSamples = len(mixedDf)
 
@@ -67,24 +89,41 @@ def categorical_heat_map(mixedDf,var1,var2):
 
     ax.set_title(f"Percentages of corresponding categories\n between {var1} and {var2}")
     fig.tight_layout()
+    plt.savefig(savepath)
     plt.show()
 
-def setup_and_graph_fiat(USDdf,ZARdf,openDate,closeDate,normMethod):
+
+    return plt
+
+def setup_and_graph_fiat(USDdf,ZARdf,openDate,closeDate,normMethod,diffSavePath,unDiffSavePath):
 
     ZARdf = set_time_period(ZARdf, 'Timestamp', openDate, closeDate)
 
-    #ZARdf['ZARDiff'] = ZARdf['Close'] - ZARdf['Open']
     ZARdf = get_difference(ZARdf,'Timestamp','Close','ZAR')
-
-    plotOverTime(ZARdf,'ZARDiff')
-
-    ZARdf = create_moving_average(ZARdf, 'Timestamp', 'ZARDiff', 100)
     ZARdf['ZARVolume'] = ZARdf['Volume']
-    ZARdf = create_moving_average(ZARdf, 'Timestamp', 'ZARVolume', 5)
-    ZARdf.drop(columns=['Open', 'High', 'Low', 'Close', 'Volume', 'Quote_Volume', 'Market'], inplace=True)
-
     ZARdf = normalize(normMethod,ZARdf, 'ZARDiff')
 
+
+    ZAR_vs_time = plotOverTime(ZARdf.tail(263520),'Close')
+    ZAR_vs_time.savefig(unDiffSavePath)
+    ZAR_vs_time.show()
+
+    ZARDiff_vs_time = plotOverTime(ZARdf.tail(263520),'ZARDiff')
+    ZARDiff_vs_time.savefig(diffSavePath)
+    ZARDiff_vs_time.show()
+
+    ZARDiff_vs_time = plotOverTime(ZARdf.tail(263520),'ZARDiff_norm')
+    ZARDiff_vs_time.savefig(diffSavePath)
+    ZARDiff_vs_time.show()
+
+
+
+    ZARdf = create_moving_average(ZARdf, 'Timestamp', 'ZARDiff', 100)
+    ZARdf = create_lags(ZARdf, 'Timestamp', 'ZARDiff', [1, 2, 3, 4, 5])
+
+    ZARdf = create_moving_average(ZARdf, 'Timestamp', 'ZARVolume', 5)
+    ZARdf = create_moving_average(ZARdf, 'Timestamp', 'ZARDiff', 5)
+    ZARdf.drop(columns=['Open', 'High', 'Low', 'Close', 'Volume', 'Quote_Volume', 'Market'], inplace=True)
 
 
     USDdf = set_time_period(USDdf, 'Timestamp', openDate, closeDate)
@@ -121,9 +160,23 @@ def setup_and_graph_fiat(USDdf,ZARdf,openDate,closeDate,normMethod):
 
     return mixedDf
 
-BTCFiat = setup_and_graph_fiat(BTCUSD,BTCZAR,'2020-01-01','2022-04-01','NormDist')
+imageFolderPath = '/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Images'
 
-categorical_heat_map(BTCFiat,'ZARDiff_cat','USDDiff_cat')
-categorical_heat_map(BTCFiat,'ZARDiff_cat','USDDiff_1_cat')
-categorical_heat_map(BTCFiat,'USDDiff_1_cat','USDDiff_2_cat')
-categorical_heat_map(BTCFiat,'ZARDiff_cat','USDDiff_2_cat')
+BTCFiat = setup_and_graph_fiat(BTCUSD,BTCZAR,'2020-01-01','2022-04-01','NormDist',diffSavePath=f'{imageFolderPath}/BTC_ZAR_Diff_vs_time.png'
+                               ,unDiffSavePath=f'{imageFolderPath}/BTC_ZAR_vs_time.png')
+
+categorical_heat_map(BTCFiat,'ZARDiff_cat','USDDiff_cat',f'{imageFolderPath}/HMap_ZAR_vs_USD.png')
+categorical_heat_map(BTCFiat,'ZARDiff_cat','USDDiff_1_cat',f'{imageFolderPath}/HMap_ZAR_vs_USD_1')
+categorical_heat_map(BTCFiat,'USDDiff_cat','USDDiff_1_cat',f'{imageFolderPath}/HMap_USD_vs_USD_1')
+categorical_heat_map(BTCFiat,'ZARDiff_cat','USDDiff_2_cat',f'{imageFolderPath}/HMap_ZAR_vs_USD_2')
+
+reg_and_scatter_plot(BTCFiat,'USDDiff','ZARDiff',f'{imageFolderPath}/Scatter_ZAR_vs_USD')
+reg_and_scatter_plot(BTCFiat,'USDDiff_1','ZARDiff',f'{imageFolderPath}/Scatter_ZAR_vs_USD_1')
+reg_and_scatter_plot(BTCFiat,'USDDiff_1','USDDiff',f'{imageFolderPath}/Scatter_USD_vs_USD_1')
+reg_and_scatter_plot(BTCFiat,'USDDiff_2','ZARDiff',f'{imageFolderPath}/Scatter_ZAR_vs_USD_2')
+
+
+
+
+
+

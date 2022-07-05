@@ -129,7 +129,6 @@ def trim_middle(df,variable,range:list[int],timevar:str):
 
     return df
 
-
 def plotOverTime(df,var):
     df['Day'] = df['Timestamp'].map(lambda x: str(x).split(' ')[-1])
     df = df[df['Day'] == '00:00:00+00:00']
@@ -137,7 +136,7 @@ def plotOverTime(df,var):
     plt.title(f'{var} over time')
     plt.xlabel('Date')
     plt.ylabel(f'{var}')
-    plt.show()
+    return plt
 
 def get_difference(df,timevar, variable, label):
 

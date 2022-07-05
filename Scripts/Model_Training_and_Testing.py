@@ -29,7 +29,6 @@ def setup_and_graph_fiat(USDdf,ZARdf,openDate,closeDate,normMethod):
 
     ZARdf = normalize(normMethod,ZARdf, 'ZARDiff')
 
-
     print(f"\nTrimming the middle removed {100*(len1-len2)/len1}% of the data")
 
 
