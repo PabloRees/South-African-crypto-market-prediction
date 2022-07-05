@@ -3,7 +3,6 @@ import pandas as pd
 import pytz
 import matplotlib.pyplot as plt
 
-
 def Y_cat_format(df,YVar,binary:bool):
     Y_mean = np.mean(df[YVar])
 

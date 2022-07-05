@@ -25,7 +25,7 @@ finally the results are discussed in the conclusion.
 
 ##2. Data Collection and Cleaning
 Data collection was done via email (and WeTransfer) on the VALR side and via download on the Kraken side. The VALR data was delivered as per minute pricing data describing the opening-price, high-price, low-price, close-price and volume per minute. This is known as the OHLC format. 
-No initial cleaning was needed for the VALR data. The VALR data was adjusted from the Pretoria, South Africa timezone to the UTC timezone in order to match the timezone of the Kraken data. 
+The VALR data was adjusted from the Pretoria, South Africa timezone to the UTC timezone in order to match the timezone of the Kraken data. No further cleaning was necessary for the VALR data.
 
 Kraken provides trade history for the Ethereum-USD (ETH-USD) market and pricing history per minute for the Bitcoin-USD (BTC-USD) market in this [Google Drive](https://drive.google.com/drive/folders/1jI3mZvrPbInNAEaIOoMbWvFfgRDZ44TT "Kraken Historical Data Google Drive").
 The ETH-USD trade history was converted into a per minute OHLC format by grouping the trades into minute long intervals and taking the opening trade price as the opening-price, the highest trade price as the high-price, the lowest trade price as the low-price, the final trade price as the closing-price
@@ -34,13 +34,17 @@ and the total volume of cryptocurrency traded as the volume.
 Because the aim of this project is to use the international market for Bitcoin and Ethereum to predict the South African market in order to augment algorithmic trading decisions - 
 the per minute OHCL data for both markets was differenced by its first lag. In particular, the closing prices were differenced and converted to a percentage. 
 One of the major benefits of differencing the data is that it centers it around zero. Please see Figures 1 and 2 for a comparison of the differenced and undifferenced 
-BTC-USD closing prices over time. Further, differencing (by percentage) the data brings the scale of the two markets together. Because of the ZAR/USD exchange rate (around R15 per USD) the ZAR-BTC and ZAR-ETH markets have nominal values around 15 times higher than the USD markets.
+BTC-USD closing prices over time. Further, differencing the data (by percentage) brings the scale of the two markets together. Because of the ZAR/USD exchange rate (around R15 per USD), the ZAR-BTC and ZAR-ETH markets have nominal values around 15 times higher than the USD markets.
 This is problematic if both ZAR lags and USD lags are included in the variables input into models that work with node weightings because it can bias the model towards variables with bigger scales (reference here). This problem is mitigated by the scaling inherent in differencing by percentage.
-After differencing, first 5 lags of the closing prices of both the ZAR and USD markets were taken. Similarly, a 100 period moving average and a 5 period moving average were taken for both markets. Note that the last inclusion in the moving averages is the first lag of the closing price.
+After differencing, the first 5 lags of the closing prices of both the ZAR and USD markets were taken. Similarly, a 100 period moving average and a 5 period moving average were taken for both markets. Note that the moving averages are also lagged by one period in order to avoid any data contamination.
 
 Finally, the differenced ZAR-BTC and USD-BTC variables were divided into 8 categories dependent on the number of standard deviations that a sample lies away from the mean. Please see Equation 1 for details.
 
-*Equation 1: Piecewise categorization of variables*
+![Figure 1](/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Images/BTC_ZAR_vs_time.png)  
+*Figure 1: BTC-ZAR over Time*
+
+![Figure 2](/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Images/BTC_ZAR_Diff_vs_time.png)  
+*Figure 2: Differenced BTC-ZAR over Time*  
 
 $$ Ycat=   \left\{
 \begin{array}{ll}
@@ -55,28 +59,20 @@ $$ Ycat=   \left\{
 \end{array} 
 \right.  
 $$
-
-
-
-![Figure 1](/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Images/BTC_ZAR_vs_time.png)  
-*Figure 1: BTC-ZAR over Time*
-
-![Figure 2](/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Images/BTC_ZAR_Diff_vs_time.png)  
-*Figure 2: Differenced BTC-ZAR over Time*  
+*Equation 1: Piecewise categorization of variables*
 
 ##Initial analysis
-Single linear (OLS) regression was used to test the hypothesis in the most basic way and a positive result was yielded. Regressing the unlagged BTC-ZAR variable on the unlagged BTC-USD variable reveals a strong positive relationship between the two - please see Figure 3.
-Next, regressing the unlagged BTC-ZAR variable on the  first lag of the BTC-USD market yields a weaker but comparable positive relationship - please see Figure 4. However, regressing the unlagged BTC-USD variable on the first lag of the BTC-USD market reveals a very weak positive relationship
-- please see Figure 5. Infact, even the second lag of the BTC-USD variable is a better predictor of the unlagged BTC-ZAR market than the first lag of the BTC-USD variable is for the BTC-USD market. Please see Table 1 for coefficients and R-Squared values. 
+Single linear (OLS) regression was used to test the hypothesis in the most basic way and yielded a positive result. Regressing the un-lagged BTC-ZAR variable on the un-lagged BTC-USD variable reveals a strong positive relationship between the two - please see Figure 3.
+Next, regressing the un-lagged BTC-ZAR variable on the  first lag of the BTC-USD market yields a weaker but comparable positive relationship - please see Figure 4. However, regressing the un-lagged BTC-USD variable on the first lag of the BTC-USD market reveals a very weak positive relationship
+- please see Figure 5. In fact, even the second lag of the BTC-USD variable is a better predictor of the un-lagged BTC-ZAR market than the first lag of the BTC-USD variable is for the BTC-USD market. Please see Table 1 for coefficients and R-Squared values. While it is clear that any linear relationship 
+between lags of the BTC-USD market and the un-lagged BTC-ZAR market is weak these results do suggest that the USD market leads the South African market at least in some way.
 
 |Regression|Coefficient|R-Squared|
 |----------|-----------|---------|
 |BTC-ZARDiff on BTC-USDDiff| 0,5 |0,17|
 |BTC-ZARDiff on BTC-USDDiff_1|0,26|0,05|
 |BTC-USDDiff on BTC-USDDiff_1|0,03|0,0008|
-
-
-
+|BTC-ZARDiff on BTC-USDDiff_2|0,08|0,004|
 
 ![Figure 3](/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Images/Scatter_ZAR_vs_USD.png)
 *Figure 3: Unlagged BTC-ZAR vs unlagged BTC-USD*  
@@ -90,6 +86,7 @@ Next, regressing the unlagged BTC-ZAR variable on the  first lag of the BTC-USD 
 *Figure 5: First lag of BTC-USD vs unlagged BTC-USD*  
 *R-squared: 0.0008  , Coefficient:0.03*
 
+Following these results, machine learning models were tested. The variables selected for 
 
 
 

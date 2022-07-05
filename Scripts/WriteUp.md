@@ -75,20 +75,27 @@ Next, regressing the unlagged BTC-ZAR variable on the  first lag of the BTC-USD 
 |BTC-ZARDiff on BTC-USDDiff_1|0,26|0,05|
 |BTC-USDDiff on BTC-USDDiff_1|0,03|0,0008|
 
-
-
-
 ![Figure 3](/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Images/Scatter_ZAR_vs_USD.png)
-*Figure 3: Unlagged BTC-ZAR vs unlagged BTC-USD*  
+*Figure 3: Un-lagged BTC-ZAR vs un-lagged BTC-USD*  
 *R-squared: 0.17  , Coefficient:0.5*
 
 ![Figure 4](/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Images/Scatter_ZAR_vs_USD_1.png)  
-*Figure 4: First lag of BTC-ZAR vs unlagged BTC-USD*  
+*Figure 4: First lag of BTC-ZAR vs un-lagged BTC-USD*  
 *R-squared: 0.05  , Coefficient:0.27*
 
 ![Figure 5](/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Images/Scatter_USD_vs_USD_1.png)  
-*Figure 5: First lag of BTC-USD vs unlagged BTC-USD*  
+*Figure 5: First lag of BTC-USD vs un-lagged BTC-USD*  
 *R-squared: 0.0008  , Coefficient:0.03*
+
+Running an elastic net regression with a lambda of 0.05 indicated that eight variables are prominent in the prediction of the un-lagged BTC-ZAR variable. Please see Figure 6. 
+A second elastic net regression, including only the eight variables yielded by the first elastic net regression, with a lambda value of 0.01 indicates the five most prominent variables to be 
+USDiff_1, ZARDiff_1, ZARVolume_1, USDDiff_2 and ZARDiff_2; in that order. Please see Figure 7.
+
+![Figure 6](/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Images/ElsaticGrid_1.png)  
+*Figure 6: Elastic net regression 1*  
+
+![Figure 7](/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Images/ElsaticGrid_2.png)  
+*Figure 7: Elastic net regression 2*  
 
 
 
