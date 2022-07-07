@@ -47,6 +47,25 @@ def Y_cat_format(df,YVar,binary:bool):
         #print(f'The mean of Y is {np.mean(Y)}')
         return Y
 
+
+def cat_format_by_difference(df,YVar,difference):
+    Y = []
+    for i in df[YVar]:
+        if i > difference:
+            Y.append(4)
+
+        elif i > 0:
+            Y.append(3)
+
+        elif i > -difference:
+            Y.append(2)
+
+        else: # i < difference
+            Y.append(1)
+
+    return Y
+
+
 def create_lags(df,timevar,variable,lags:list[int]):
 
     df = df.sort_values(by=timevar,axis=0,ascending=True)
@@ -117,14 +136,14 @@ def trim_outliers(df,variable,range:list[int]):
 
 def trim_middle(df,variable,range:list[int],timevar:str):
 
-    df['varCat'] = Y_cat_format(df,variable,False)
-    df1 = df[df['varCat'] < range[0]]
-    df2 = df[df['varCat'] > range[1]]
+    #df['varCat'] = Y_cat_format(df,variable,False)
+    df1 = df[df[variable] < range[0]]
+    df2 = df[df[variable] > range[1]]
 
     df = pd.concat([df1, df2], axis=0)
     df = df.sort_values(by=timevar,axis=0,ascending=True)
 
-    df.drop(columns = ['varCat'])
+    #df.drop(columns = ['varCat'])
 
     return df
 

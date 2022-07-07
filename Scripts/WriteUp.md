@@ -1,8 +1,3 @@
----
-output:
-  pdf_document: default
-  html_document: default
----
 # Predicting the South African Bitcoin, Ethereum and Solana Markets using International Market Data
 
 ##1. Introduction
@@ -40,8 +35,6 @@ After differencing, first 5 lags of the closing prices of both the ZAR and USD m
 
 Finally, the differenced ZAR-BTC and USD-BTC variables were divided into 8 categories dependent on the number of standard deviations that a sample lies away from the mean. Please see Equation 1 for details.
 
-*Equation 1: Piecewise categorization of variables*
-
 $$ Ycat=   \left\{
 \begin{array}{ll}
       1 & where & \mu-2\sigma>Y \\
@@ -55,7 +48,7 @@ $$ Ycat=   \left\{
 \end{array} 
 \right.  
 $$
-
+*Equation 1: Piecewise categorization of variables by number of standard deviations from the mean*
 
 
 ![Figure 1](/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Images/BTC_ZAR_vs_time.png)  
@@ -64,7 +57,7 @@ $$
 ![Figure 2](/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Images/BTC_ZAR_Diff_vs_time.png)  
 *Figure 2: Differenced BTC-ZAR over Time*  
 
-##Initial analysis
+##3. Initial analysis and variable selection
 Single linear (OLS) regression was used to test the hypothesis in the most basic way and a positive result was yielded. Regressing the unlagged BTC-ZAR variable on the unlagged BTC-USD variable reveals a strong positive relationship between the two - please see Figure 3.
 Next, regressing the unlagged BTC-ZAR variable on the  first lag of the BTC-USD market yields a weaker but comparable positive relationship - please see Figure 4. However, regressing the unlagged BTC-USD variable on the first lag of the BTC-USD market reveals a very weak positive relationship
 - please see Figure 5. Infact, even the second lag of the BTC-USD variable is a better predictor of the unlagged BTC-ZAR market than the first lag of the BTC-USD variable is for the BTC-USD market. Please see Table 1 for coefficients and R-Squared values. 
@@ -97,10 +90,111 @@ USDiff_1, ZARDiff_1, ZARVolume_1, USDDiff_2 and ZARDiff_2; in that order. Please
 ![Figure 7](/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Images/ElsaticGrid_2.png)  
 *Figure 7: Elastic net regression 2*  
 
+##4. Machine Learning Analysis 1 and corrections
+
+Both the five variable set and the eight variable set were tested across 3 classification algorithms and 3 regression algorithms.
+The classification algorithms are Logistic Regression, Gradient Boosting and a Neural Network while the regression algorithms are Linear Regression,
+Gradient Boosting and a Neural Network. The data is arranged into training and test sets using an iterative 5 stage time series approach. 
+The data is split into 5 consecutive time periods of even length. Each algorithm is trained and tested sequentially on the first four time periods and 
+then only tested on the final (fifth) time period. This forces the algorithms to perform prediction instead of interpolation. The results of these tests are displayed in Tables 2,3,4 and 5.
+
+| |Logistic Regression|Gradient Boosting|Neural Network|
+|----|----|----|----|
+|Train Accuracy  | 0.61 | 0.71 | 0.71 |
+|Train Precision | 0.41 | 0.76 | 0.58 |
+|Train Recall    | 0.6 | 0.098 | 0.25 |
+|Test Accuracy   | 0.59 | 0.68 | 0.68 |
+|Test Precision  | 0.41 | 0.63 | 0.56 |
+|Test Recall     | 0.54 | 0.05 | 0.18 |  
+*Table 2: Five variable classification scores*  
+
+| |Logistic Regression|Gradient Boosting|Neural Network|
+|----|----|----|----|
+|Train Accuracy  | 0.64 | 0.71 | 0.72 |
+|Train Precision | 0.43 | 0.78 | 0.59 |
+|Train Recall    | 0.46 | 0.1  | 0.27 |
+|Test Accuracy   | 0.62 | 0.68 | 0.68 |
+|Test Precision  | 0.41 | 0.65 | 0.55 |
+|Test Recall     | 0.38 | 0.05 | 0.24 |  
+*Table 3: Eight variable classification scores*  
+
+| |Linear Regression|Gradient Boosting|Neural Network|
+|----|----|----|----|
+|Train MSE | 0.013 | 0.014 | 0.013 |
+|Train MAE | 0.066 | 0.065 | 0.067 |
+|Test MSE  | 0.008 | 0.008 | 0.008 |
+|Test MAE  | 0.051  | 0.051 | 0.051 |  
+*Table 4: Five variable regression scores*  
+*Standard error of target variable (ZARDiff) is 0.117*  
+
+| |Linear Regression|Gradient Boosting|Neural Network|
+|----|----|----|----|
+|Train MSE | 0.014 | 0.014 | 0.014 |
+|Train MAE | 0.067 | 0.065 | 0.067 |
+|Test MSE  | 0.008 | 0.008 | 0.008 |
+|Test MAE  | 0.051 | 0.051 | 0.053 |  
+*Table 5: Eight variable regression scores*  
+*Standard error of target variable (ZARDiff) is 0.117*  
+
+In the classification task no algorithm stands out as superior across all three tasks. What one algorithm gains in terms of accuracy over another it loses in precision or recall.
+This holds true accross both the training and test scores and the five and eight variable datasets. In the regression task there is extreme uniformity within the test and training scores across both datasets.
+Together this indicates that the scores achieved in this round of ML may be a result of a specific distribution of the target variable instead of good quality training of the algorithms.
+
+Investigation into the distribution of the categorical target variable indicates that this is true. 52% of the categorical data lies in bin 4 (within half a standard deviation below the mean) 
+and a further 16% lies in bin 5 (within half a standard deviation above the mean). Please see Figure 8. Thus, 68% of the data lies within half a standard deviation of the mean. 
+For reference, the mean of the series is 0.000125 and the standard deviation is 0.117.
+The histogram of the continuous target variable indicates a similar situation - see Figure 9.  
+
+![Figure 8](/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Images/ZARDiff_cat_hist.png)  
+*Figure 8: Histogram of the categorical target variable*  
+
+![Figure 9](/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Images/ZARDiff_cont_hist.png)  
+*Figure 9: Histogram of the continuous target variable*  
+
+Category 4 indicates a change in the ZAR-BTC price of between -0,058% and +0,000125% while category 5 indicates a change of between +0,000125% and +0,059%. Trading fees for market takers on VALR are 0.1% (reference). 
+Thus, any trades made within categories 4 and 5 will lose money and are not worth attempting. However, it may be useful to know whether the price is likely to increase or decrease even within the 0.1% range. 
+Re-categorizing the ZAR-BTC variable into 4 categories - according to Equation 2 - allows for this type of analysis. Over the 28 months analyzed here there were a total of 89306 occasions where the price of Bitcoin changed 
+by more than 0.1% in a minute (about 22% of the samples split evenly between increases and decreases) for an average of 3189.5 times per month, or ~101 times per day. However, these occasions only account for 56% of the data lies in category 2 and 22% in category 3 and thus prediction models trained on the data are still vulnerable to bias.
+Although, it may be to a lesser extent because the outlying fields contain a greater proportion of the data. Further, it is also possible to penalize ML algorithms for missing outliers using...
+
+$$ Ycat=   \left\{
+\begin{array}{ll}
+      1 & where & Y < -0.1\\
+      2 & where & -0.1 < Y < 0 \\
+      3 & where & 0 < Y < 0.1 \\
+      4 & where & 0.1 < Y \\
+
+\end{array} 
+\right.  
+$$
+*Equation 2: Piecewise categorization of variables by differences absolutely larger than 0.1%*
 
 
+##5. Machine Learning Analysis 2 and conclusions
+Running the same sets of five and eight variables through the same classification algorithms as above with the new four category BTC-ZAR variable as the target variable yields
+results that are similar to the results reported in the Machine Learning Analysis 1 section. They are not depicted here. However, removing the middle section of the data - categories 2 and 3 - yields
+significantly better results. These are presented in Tables 5 and 6.  
 
 
+| |Logistic Regression|Gradient Boosting|Neural Network|
+|----|----|----|----|
+|Train Accuracy  | 0.56 | 0.58 | 0.56 |
+|Train Precision | 0.44 | 0.45 | 0.43 |
+|Train Recall    | 0.77 | 0.82 | 0.77 |
+|Test Accuracy   | 0.75 | 0.75 | 0.75 |
+|Test Precision  | 0.75 | 0.75 | 0.78 |
+|Test Recall     | 0.76 | 0.75 | 0.71 |  
+*Table 5: Five variable classification scores for no-middle dataset*  
+
+| |Logistic Regression|Gradient Boosting|Neural Network|
+|----|----|----|----|
+|Train Accuracy  | 0.56 | 0.58 | 0.56 |
+|Train Precision | 0.44 | 0.46 | 0.44 |
+|Train Recall    | 0.78 | 0.83 | 0.78 |
+|Test Accuracy   | 0.75 | 0.75 | 0.75 |
+|Test Precision  | 0.75 | 0.75 | 0.76 |
+|Test Recall     | 0.77 | 0.75 | 0.75 |  
+*Table 6: Eight variable classification scores for no-middle dataset*  
 
 
 

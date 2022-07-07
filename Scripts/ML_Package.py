@@ -35,63 +35,6 @@ class regressionScoreHolder:
         self.MSE = MSE
         self.MAE = MAE
 
-def setupXYvars(vecList):
-    X_control = ['DlogDif_1', 'DlogDif_2', 'absDlogDif_1', 'blackSwan_SD3_1', 'blackSwan_SD4_1', 'blackSwan_SD5_1',
-              'stdVol_1DateResid', 'pos_neg_transform']
-
-    WVec = []
-    DocVec200 = []
-    DocVec20 = []
-    vader = []
-    blob = []
-
-    if 'WV' in vecList:
-
-        for i in range(0, 200):
-            WVec.append(f'WV_{i}')
-
-    if 'DV_200_' in vecList:
-        for i in range(0, 200):
-            DocVec200.append(f'DV_200_{i}')
-
-    if 'DV_20_' in vecList:
-
-        for i in range(0,20):
-            DocVec20.append((f'DV_20_{i}'))
-
-    if 'PVDM' in vecList:
-
-        for i in range(0,20):
-            DocVec20.append((f'PVDM_{i}'))
-
-    if 'PVDBOW' in vecList:
-
-        for i in range(0,20):
-            DocVec20.append((f'PVDBOW_{i}'))
-
-
-    if 'vader' in vecList:
-        vader = ['VaderNeg', 'VaderNeu', 'VaderPos', 'VaderComp']
-
-    if 'blob' in vecList:
-        blob = ['blobPol', 'blobSubj']
-
-    X_test = WVec +DocVec200 + DocVec20+ vader + blob  # all sets seem to have predictive value
-
-    meta_dr_1 = ['Nasdaq_dr_1', 'Oil_dr_1', 'SSE_dr_1',
-                 'USDX_dr_1', 'VIX_dr_1']  # 'BTC_dr_1',
-
-    meta_ld_1 = ['Nasdaq_ld_1', 'Oil_ld_1', 'SSE_ld_1',
-                 'USDX_ld_1',
-                 'VIX_ld_1']  # 'BTC_ld_1', #BTC seems to be a strong predictor although it may just be shrinking the dataset and causing over fitting
-
-    X_meta = meta_ld_1  # lr performs better for the validation and train sets, they perform the same for the test set
-
-    Y = 'logDif_date_resid'  # options: 'DlogDif', 'logDif', 'logDif_date_resid'
-    X = X_control + X_meta + X_test  # Options: any combination of X_auto, X_meta and X_NLP
-
-    return X_control, X_meta, X_test, Y
-
 def plot_precision_recall_vs_threshold(precisions, recalls, thresholds):
     plt.plot(thresholds, precisions[:-1], "b--", label="Precision")
     plt.plot(thresholds, recalls[:-1], "g-", label="Recall")
@@ -112,49 +55,23 @@ def plot_roc_curve(Y, y_predict,Name, label=None ):
 
     return current_roc_curve
 
-def Y_cat_format(df,YVar,binary:bool):
-    Y_mean = np.mean(df[YVar])
+def Y_cat_format(df,YVar,binary:bool=None,difference=0.1):
+    Y = []
+    for i in df[YVar]:
+        if i > difference:
+            Y.append(4)
 
-    if binary:
-        Y_binary = []
-        for i in df[YVar]:
-            if i >Y_mean:
-                Y_binary.append(1)
-            else:Y_binary.append(0)
+        elif i > 0:
+            Y.append(3)
 
-        #print(f'The mean of Y is {np.mean(Y_binary)}')
-        return Y_binary
+        elif i > 0-difference:
+            Y.append(2)
 
-    else:
-        Y_sd = np.std(df[YVar])
-        Y = []
-        for i in df[YVar]:
-            if i > Y_mean + 2 * Y_sd:
-                Y.append(8)
+        else: # i < difference
+            Y.append(1)
 
-            elif i > Y_mean + Y_sd:
-                Y.append(7)
+    return Y
 
-            elif i > Y_mean + 0.5 * Y_sd:
-                Y.append(6)
-
-            elif i > Y_mean:
-                Y.append(5)
-
-            elif i < (Y_mean - 2 * Y_sd):
-                Y.append(1)
-
-            elif i < (Y_mean - Y_sd):
-                Y.append(2)
-
-            elif i < (Y_mean - 0.5 * Y_sd):
-                Y.append(3)
-
-            else:
-                Y.append(4)
-
-        #print(f'The mean of Y is {np.mean(Y)}')
-        return Y
 
 def dataSetup(full_df,startDate,remove_duplicate_dates=False):
 
@@ -162,19 +79,19 @@ def dataSetup(full_df,startDate,remove_duplicate_dates=False):
         if 'Unnamed' in str(i):
             full_df.drop(str(i), axis=1, inplace=True)
 
-    small_Df = full_df[~(full_df['Date'] < startDate)]
+    small_Df = full_df[~(full_df['Timestamp'] < startDate)]
     small_Df.reset_index(inplace=True)
-    small_Df.sort_values(by='Date')
+    small_Df.sort_values(by='Timestamp')
 
     if remove_duplicate_dates:
-        small_Df.drop_duplicates(subset='Date',inplace=True)
+        small_Df.drop_duplicates(subset='Timestamp',inplace=True)
 
     trainDf, testDf = train_test_split(small_Df,train_size=0.7,random_state=42)
     testDf, valDf = train_test_split(testDf,train_size=0.5,random_state=42) #shuffling is fine because YVar is stationary
 
     return trainDf, testDf, valDf
 
-def setClassifier(ML_type,clf_type,XVars,binary, random_state=42):
+def setClassifier(clf_type,XVars,binary, random_state=42):
 
     clf_types = ['clf_SGD', 'clf_MLP', 'clf_NN', 'clf_KNN', 'clf_logreg', 'clf_tree', 'clf_forrest',
                  'clf_GradientBoosting']
@@ -209,7 +126,7 @@ def setClassifier(ML_type,clf_type,XVars,binary, random_state=42):
         if binary:
             L_3 = round(inputVars/2)
         else:
-            L_3 = 7
+            L_3 = 4
 
         clf = MLPClassifier(hidden_layer_sizes=(L_1,L_2,L_3), activation='relu', solver='adam', alpha=0.001,
                             max_iter=10000, random_state=random_state,early_stopping=True,learning_rate='adaptive',
@@ -226,12 +143,12 @@ def setClassifier(ML_type,clf_type,XVars,binary, random_state=42):
                                      max_samples=None, max_depth=5)
 
     else : #clf_type == 'clf_GradientBoosting'
-        clf = GradientBoostingClassifier(random_state=random_state,learning_rate=0.01,loss='exponential',
+        clf = GradientBoostingClassifier(random_state=random_state,learning_rate=0.01,
                                         min_samples_split=0.001,min_samples_leaf=0.001,max_depth=16)
 
     return clf
 
-def setRegressor(ML_type,reg_type,XVars,random_state=42):
+def setRegressor(reg_type,XVars,random_state=42):
 
     reg_types = ['reg_SGD', 'reg_NN', 'reg_MLR','reg_GradientBoosting']
 
@@ -388,11 +305,11 @@ class TSClassifier:
         if 'Unnamed: 0' in full_df.columns:
             full_df.drop('Unnamed: 0', axis=1, inplace=True)
 
-        small_Df = full_df[~(full_df['Date'] < startDate)]
+        small_Df = full_df[~(full_df['Timestamp'] < startDate)]
         small_Df.reset_index(inplace=True)
 
         if remove_duplicate_dates:
-            small_Df.drop_duplicates(subset='Date', inplace=True)
+            small_Df.drop_duplicates(subset='Timestamp', inplace=True)
 
         self.binary =binary
         self.XVars = XVars
@@ -428,6 +345,8 @@ class TSClassifier:
             clone_clf.fit(X_train_folds, Y_train_folds)
             y_pred = clone_clf.predict(X_train_folds)
 
+            print(f"Unique predictions : {pd.Series(y_pred).unique()}")
+
             confMat_current = confusion_matrix(Y_train_folds, y_pred)
             trainConfMat.append(confMat_current)
 
@@ -446,8 +365,8 @@ class TSClassifier:
             else: # binary == False
                 #makes binary score calculations based on a non-binary prediction set
                 binaryconfMat_current = np.array(
-                    [[np.sum(confMat_current[0:4, 0:4]), np.sum(confMat_current[0:4, 4:8])],
-                     [np.sum(confMat_current[4:8, 0:4]), np.sum(confMat_current[4:8, 4:8])]])
+                    [[np.sum(confMat_current[0:1, 0:1]), np.sum(confMat_current[0:1, 1:2])],
+                     [np.sum(confMat_current[1:2, 0:2]), np.sum(confMat_current[1:2, 1:2])]])
 
                 trainBinaryConfMat.append(binaryconfMat_current)
                 trainAccuracy.append((binaryconfMat_current[0, 0] + binaryconfMat_current[1,1]) /
@@ -493,6 +412,7 @@ class TSClassifier:
             y_pred = clone_clf.predict(X_test_folds)
 
             confMat_current = confusion_matrix(Y_test_folds, y_pred)
+            print(confMat_current)
             testConfMat.append(confMat_current)
 
             if self.binary:
@@ -508,8 +428,10 @@ class TSClassifier:
 
             else: # binary == False
                 binaryconfMat_current = np.array(
-                    [[np.sum(confMat_current[0:4, 0:4]), np.sum(confMat_current[0:4, 4:8])],
-                     [np.sum(confMat_current[4:8, 0:4]), np.sum(confMat_current[4:8, 4:8])]])
+                    [[np.sum(confMat_current[0:1, 0:1]), np.sum(confMat_current[0:1, 1:2])],
+                     [np.sum(confMat_current[1:2, 0:1]), np.sum(confMat_current[1:2, 1:2])]])
+
+                print(binaryconfMat_current)
 
                 testAccuracy.append((binaryconfMat_current[0, 0] + binaryconfMat_current[1,1]) /
                                      (binaryconfMat_current[0, 0] + binaryconfMat_current[0, 1] +
@@ -670,11 +592,11 @@ class TSRegressor:
         if 'Unnamed: 0' in full_df.columns:
             full_df.drop('Unnamed: 0', axis=1, inplace=True)
 
-        small_Df = full_df[~(full_df['Date'] < startDate)]
+        small_Df = full_df[~(full_df['Timestamp'] < startDate)]
         small_Df.reset_index(inplace=True)
 
         if remove_duplicate_dates:
-            small_Df.drop_duplicates(subset='Date', inplace=True)
+            small_Df.drop_duplicates(subset='Timestamp', inplace=True)
 
         self.XVars = XVars
         self.YVar = YVar
@@ -736,14 +658,19 @@ def runML_tests(full_df,startDate,XVars, YVar,crossVals,scoring,ML_type,remove_d
     if 'date' in full_df.columns:
         full_df['date'] = pd.to_datetime(full_df['Date'])
         full_df.sort_values(by='date', inplace=True)
-    else:
-        if 'Date' in full_df.columns:
+
+    elif 'Date' in full_df.columns:
             full_df['Date'] = pd.to_datetime(full_df['Date'])
             full_df.sort_values(by='Date', inplace=True)
-        else: raise ValueError(f'Dataframe must contain a "Date" or "date" column')
+
+    elif 'Timestamp' in full_df.columns:
+            full_df['Timestamp'] = pd.to_datetime(full_df['Timestamp'])
+            full_df.sort_values(by='Timestamp', inplace=True)
+
+    else: raise ValueError(f'Dataframe must contain a "Date", "date" or "Timestamp" column')
 
     if ML_type in ['CS_Classifier', 'TS_Classifier']:
-        clf = setClassifier(ML_type=ML_type, clf_type=clf_type,XVars=XVars, random_state=random_state, binary=binary)
+        clf = setClassifier(clf_type=clf_type,XVars=XVars, random_state=random_state, binary=binary)
 
         if ML_type == 'CS_Classifier':
             classifier = CSClassifier(full_df=full_df, startDate=startDate, YVar=YVar, XVars=XVars, clf=clf,
@@ -783,7 +710,7 @@ def runML_tests(full_df,startDate,XVars, YVar,crossVals,scoring,ML_type,remove_d
 
     if ML_type in ['CS_Regressor','TS_Regressor']:
 
-        reg = setRegressor(ML_type=ML_type, reg_type=reg_type,XVars=XVars, random_state=random_state)
+        reg = setRegressor(reg_type=reg_type,XVars=XVars, random_state=random_state)
 
         if ML_type == 'CS_Regressor':
             regressor = CSRegressor(full_df=full_df, startDate=startDate, YVar=YVar, XVars=XVars, reg=reg,
