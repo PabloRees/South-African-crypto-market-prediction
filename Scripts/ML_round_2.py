@@ -7,7 +7,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import confusion_matrix
-from Std_fin_ts_data_setup import trim_middle
+from Std_fin_ts_data_setup import trim_middle, mark_middle
 
 BTCZAR = pd.read_csv('/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Data/VALR/BTCZAR.csv')
 BTCUSD = pd.read_csv('/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Data/Kraken/OHLC_XBTUSD_1.csv')
@@ -44,10 +44,14 @@ for i in BTCFiat['ZARDiff_cat_by_diff'].value_counts():
 
 noMidBTCFiatDf = trim_middle(BTCFiat, 'ZARDiff_cat_by_diff', [2, 3], 'Timestamp')
 
+
+markedMidDf = mark_middle(BTCFiat, 'ZARDiff_cat_by_diff', [2, 3], 'Timestamp')
+
+
 print('\nFull set\n')
-print(noMidBTCFiatDf['ZARDiff_cat_by_diff'].value_counts())
-for i in noMidBTCFiatDf['ZARDiff_cat_by_diff'].value_counts():
-    print(f'{i/len(noMidBTCFiatDf["ZARDiff_cat_by_diff"])}')
+print(markedMidDf['Section_tag'].value_counts())
+for i in markedMidDf['Section_tag'].value_counts():
+    print(f'{i/len(markedMidDf["Section_tag"])}')
 
 
 def warmStart1():
@@ -200,6 +204,14 @@ def ML_2(df,clf_algo,startDate,XVars, YVar):
     print(f'BTC Test accuracy:{BTCtestScores.accuracy[4]}\n'
           f'BTC Test precision:{BTCtestScores.precision[4]}\n'
           f'BTC Test recall:{BTCtestScores.recall[4]}\n\n')
+
+X = ['USDDiff_1','USDDiff_2','USDDiff_3','USDDiff_4','ZARDiff_1','ZARDiff_2','ZARDiff_MA_100_1']
+
+
+print('##RandomVar Gradient Boosting Tests\n___________________________________________________________________________')
+ML_2(markedMidDf,'clf_GradientBoosting',startDate,X,'ZARDiff')
+
+exit()
 
 print('##FiveVar Regression Tests\n___________________________________________________________________________')
 ML_2(noMidBTCFiatDf,'clf_logreg',startDate,fiveVars,'ZARDiff')

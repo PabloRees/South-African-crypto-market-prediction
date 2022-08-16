@@ -126,7 +126,6 @@ def categorical_heat_map_from_conf_mat(confMat,savepath):
 
     return plt
 
-
 def setup_and_graph_fiat(USDdf,ZARdf,openDate,closeDate,diffSavePath,unDiffSavePath):
 
     ZARdf = set_time_period(ZARdf, 'Timestamp', openDate, closeDate)
@@ -147,6 +146,12 @@ def setup_and_graph_fiat(USDdf,ZARdf,openDate,closeDate,diffSavePath,unDiffSaveP
     ZARdf = create_lags(ZARdf, 'Timestamp', 'ZARDiff', [1, 2, 3, 4, 5])
 
     ZARdf = create_moving_average(ZARdf, 'Timestamp', 'ZARVolume', 5)
+    ZARdf = create_moving_average(ZARdf, 'Timestamp', 'ZARVolume', 50)
+    ZARdf = create_moving_average(ZARdf, 'Timestamp', 'ZARVolume', 100)
+    ZARdf = create_moving_average(ZARdf, 'Timestamp', 'ZARVolume', 1000)
+
+
+
     ZARdf = create_moving_average(ZARdf, 'Timestamp', 'ZARDiff', 5)
     ZARdf.drop(columns=['Unnamed: 0','Open', 'High', 'Low', 'Close', 'Close_1', 'Volume','ZARVolume', 'Quote_Volume', 'Market'], inplace=True)
 
@@ -158,6 +163,12 @@ def setup_and_graph_fiat(USDdf,ZARdf,openDate,closeDate,diffSavePath,unDiffSaveP
     USDdf = create_moving_average(USDdf, 'Timestamp', 'USDDiff', 100)
     USDdf['USDVolume'] = USDdf['Volume']
     USDdf = create_moving_average(USDdf, 'Timestamp', 'USDVolume', 5)
+    USDdf = create_moving_average(USDdf, 'Timestamp', 'USDVolume', 50)
+    USDdf = create_moving_average(USDdf, 'Timestamp', 'USDVolume', 100)
+    USDdf = create_moving_average(USDdf, 'Timestamp', 'USDVolume', 1000)
+
+
+
     USDdf.drop(columns=['Unnamed: 0','Open', 'High', 'Low', 'Close', 'Close_1', 'Volume', 'Trades'], inplace=True)
 
     mixedDf = USDdf.merge(ZARdf, on='Timestamp')
@@ -167,8 +178,8 @@ def setup_and_graph_fiat(USDdf,ZARdf,openDate,closeDate,diffSavePath,unDiffSaveP
 
     mixedDf['ZARDiff_cat'] =  Y_cat_format(mixedDf, 'ZARDiff', False)
 
-    mixedDf['ZARDiff_cat_by_diff'] =  cat_format_by_difference(mixedDf, 'ZARDiff', 0.1)
-    mixedDf['USDDiff_cat_by_diff_1'] =  cat_format_by_difference(mixedDf, 'USDDiff_1', 0.1)
+    mixedDf['ZARDiff_cat_by_diff'] =  cat_format_by_difference(mixedDf, 'ZARDiff', 0.01)
+    mixedDf['USDDiff_cat_by_diff_1'] =  cat_format_by_difference(mixedDf, 'USDDiff_1', 0.01)
 
     mixedDf['USDDiff_cat'] =  Y_cat_format(mixedDf, 'USDDiff', False)
     mixedDf['USDDiff_1_cat'] =  Y_cat_format(mixedDf, 'USDDiff_1', False)

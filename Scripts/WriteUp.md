@@ -1,37 +1,34 @@
-# Predicting the South African Bitcoin, Ethereum and Solana Markets using International Market Data
+# Predicting the South African Bitcoin Market using International Market Data
 
 ##1. Introduction
+This paper examines the relationship between the international Bitcoin market and the South African Bitcoin market.
+It is hypothesized that the South African market slightly (at a one-minute resolution) lags the international market in terms of price movement. 
+If this is the case and the relationship can be modelled it could lead to improvements in algorithmic trading strategies for Bitcoin traders.
+It was found that there is a relationship between the international price change, although it is difficult to model to a degree of accuracy that would be useful to algorithmic traders.
 
-This paper examines the relationship between the international cryptocurrency market and the South African cryptocurrency market.
-It is hypothesized that the South African market slightly lags the international market in terms of price movement. 
-If this is the case and the relationship can be modelled it could lead to improvements in trading strategies for cryptocurrency traders.
-It was found that...
-
-This paper used data gathered from Kraken - an international cryptocurrency exchange - to represent the international cryptocurrency market 
+This paper used data gathered from Kraken - an American cryptocurrency exchange - to represent the international Bitcoin market 
 and from VALR - a South African cryptocurrency exchange - to represent the South African market. In specific, the per minute pricing history
-for the rand and dollar markets for Bitcoin, Ethereum and Solana were gathered from the two exchanges. Next the international markets were 
+for the rand and dollar markets for Bitcoin were gathered from the two exchanges. Next the international markets were 
 compared to the local markets to test for correlation and finally the relationships were modelled using multiple linear regressions, gradient 
 boosting and neural network algorithms available from SciKit-Learn. 
 
 The paper begins by describing the data collection process before detailing the methods of feature extraction used. 
-Next, descriptive statistics are presented and their implications explained following which further data manipulation is undertaken 
+Next, descriptive statistics are presented and their implications explained, following which further data manipulation is undertaken 
 in order to account for the idiosyncracies of the specific dataset. Next, the methods and results of the modelling process are presented and
 finally the results are discussed in the conclusion.
 
 ##2. Data Collection and Cleaning
-Data collection was done via email (and WeTransfer) on the VALR side and via download on the Kraken side. The VALR data was delivered as per minute pricing data describing the opening-price, high-price, low-price, close-price and volume per minute. This is known as the OHLC format. 
-No initial cleaning was needed for the VALR data. The VALR data was adjusted from the Pretoria, South Africa timezone to the UTC timezone in order to match the timezone of the Kraken data. 
+Data collection was done via email (and WeTransfer) on the VALR side and via download on the Kraken side. The VALR data was delivered as per minute pricing data describing the opening-price, high-price, low-price, close-price and volume per minute. 
+This is known as the OHLC format. No initial cleaning was needed for the VALR data. The VALR data was adjusted from the Pretoria,
+South Africa timezone to the UTC timezone in order to match the timezone of the Kraken data. 
 
-Kraken provides trade history for the Ethereum-USD (ETH-USD) market and pricing history per minute for the Bitcoin-USD (BTC-USD) market in this [Google Drive](https://drive.google.com/drive/folders/1jI3mZvrPbInNAEaIOoMbWvFfgRDZ44TT "Kraken Historical Data Google Drive").
-The ETH-USD trade history was converted into a per minute OHLC format by grouping the trades into minute long intervals and taking the opening trade price as the opening-price, the highest trade price as the high-price, the lowest trade price as the low-price, the final trade price as the closing-price
-and the total volume of cryptocurrency traded as the volume. 
-
+Kraken provides pricing history per minute for the Bitcoin-USD (BTC-USD) market in this [Google Drive](https://drive.google.com/drive/folders/1jI3mZvrPbInNAEaIOoMbWvFfgRDZ44TT "Kraken Historical Data Google Drive").
 Because the aim of this project is to use the international market for Bitcoin and Ethereum to predict the South African market in order to augment algorithmic trading decisions - 
 the per minute OHCL data for both markets was differenced by its first lag. In particular, the closing prices were differenced and converted to a percentage. 
-One of the major benefits of differencing the data is that it centers it around zero. Please see Figures 1 and 2 for a comparison of the differenced and undifferenced 
-BTC-USD closing prices over time. Further, differencing (by percentage) the data brings the scale of the two markets together. Because of the ZAR/USD exchange rate (around R15 per USD) the ZAR-BTC and ZAR-ETH markets have nominal values around 15 times higher than the USD markets.
+One of the major benefits of differencing the data is that it centers it around zero. Please see Figures 1 and 2 for a comparison of the differenced and un-differenced 
+BTC-USD closing prices over time. Further, differencing (by percentage) the data brings the scale of the two markets together. Because of the ZAR/USD exchange rate (around R15 per USD over the time period) the ZAR-BTC market has nominal values around 15 times higher than the USD-BTC market.
 This is problematic if both ZAR lags and USD lags are included in the variables input into models that work with node weightings because it can bias the model towards variables with bigger scales (reference here). This problem is mitigated by the scaling inherent in differencing by percentage.
-After differencing, first 5 lags of the closing prices of both the ZAR and USD markets were taken. Similarly, a 100 period moving average and a 5 period moving average were taken for both markets. Note that the last inclusion in the moving averages is the first lag of the closing price.
+After differencing, the first 5 lags of the closing prices of both the ZAR and USD markets were taken. Similarly, a 100 period moving average and a 5 period moving average were taken for both markets. Note that the last inclusion in the moving averages is the first lag of the closing price.
 
 Finally, the differenced ZAR-BTC and USD-BTC variables were divided into 8 categories dependent on the number of standard deviations that a sample lies away from the mean. Please see Equation 1 for details.
 
@@ -58,9 +55,8 @@ $$
 *Figure 2: Differenced BTC-ZAR over Time*  
 
 ##3. Initial analysis and variable selection
-Single linear (OLS) regression was used to test the hypothesis in the most basic way and a positive result was yielded. Regressing the unlagged BTC-ZAR variable on the unlagged BTC-USD variable reveals a strong positive relationship between the two - please see Figure 3.
-Next, regressing the unlagged BTC-ZAR variable on the  first lag of the BTC-USD market yields a weaker but comparable positive relationship - please see Figure 4. However, regressing the unlagged BTC-USD variable on the first lag of the BTC-USD market reveals a very weak positive relationship
-- please see Figure 5. Infact, even the second lag of the BTC-USD variable is a better predictor of the unlagged BTC-ZAR market than the first lag of the BTC-USD variable is for the BTC-USD market. Please see Table 1 for coefficients and R-Squared values. 
+Single linear (OLS) regression was used to test the hypothesis in the most basic way and yielded a positive result. Regressing the un-lagged BTC-ZAR variable on the un-lagged BTC-USD variable reveals a strong positive relationship between the two - please see Figure 3.
+Next, regressing the un-lagged BTC-ZAR variable on the  first lag of the BTC-USD market yields a weaker but comparable positive relationship - please see Figure 4. However, regressing the un-lagged BTC-USD variable on the first lag of the BTC-USD market reveals a very weak positive relationship - please see Figure 5. In fact, even the second lag of the BTC-USD variable is a better predictor of the un-lagged BTC-ZAR market than the first lag of the BTC-USD variable is for the BTC-USD market. Please see Table 1 for coefficients and R-Squared values. 
 
 |Regression|Coefficient|R-Squared|
 |----------|-----------|---------|
@@ -68,17 +64,17 @@ Next, regressing the unlagged BTC-ZAR variable on the  first lag of the BTC-USD 
 |BTC-ZARDiff on BTC-USDDiff_1|0,26|0,05|
 |BTC-USDDiff on BTC-USDDiff_1|0,03|0,0008|
 
-![Figure 3](/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Images/Scatter_ZAR_vs_USD.png)
+![Figure 3](/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Images/Scatter_ZAR_vs_USD.png)  
 *Figure 3: Un-lagged BTC-ZAR vs un-lagged BTC-USD*  
-*R-squared: 0.17  , Coefficient:0.5*
+*R-squared: 0.17 , Coefficient:0.5*
 
 ![Figure 4](/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Images/Scatter_ZAR_vs_USD_1.png)  
 *Figure 4: First lag of BTC-ZAR vs un-lagged BTC-USD*  
-*R-squared: 0.05  , Coefficient:0.27*
+*R-squared: 0.05 , Coefficient:0.27*
 
 ![Figure 5](/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Images/Scatter_USD_vs_USD_1.png)  
 *Figure 5: First lag of BTC-USD vs un-lagged BTC-USD*  
-*R-squared: 0.0008  , Coefficient:0.03*
+*R-squared: 0.0008 , Coefficient:0.03*
 
 Running an elastic net regression with a lambda of 0.05 indicated that eight variables are prominent in the prediction of the un-lagged BTC-ZAR variable. Please see Figure 6. 
 A second elastic net regression, including only the eight variables yielded by the first elastic net regression, with a lambda value of 0.01 indicates the five most prominent variables to be 
@@ -91,12 +87,12 @@ USDiff_1, ZARDiff_1, ZARVolume_1, USDDiff_2 and ZARDiff_2; in that order. Please
 *Figure 7: Elastic net regression 2*  
 
 ##4. Machine Learning Analysis 1 and corrections
-
 Both the five variable set and the eight variable set were tested across 3 classification algorithms and 3 regression algorithms.
 The classification algorithms are Logistic Regression, Gradient Boosting and a Neural Network while the regression algorithms are Linear Regression,
 Gradient Boosting and a Neural Network. The data is arranged into training and test sets using an iterative 5 stage time series approach. 
 The data is split into 5 consecutive time periods of even length. Each algorithm is trained and tested sequentially on the first four time periods and 
-then only tested on the final (fifth) time period. This forces the algorithms to perform prediction instead of interpolation. The results of these tests are displayed in Tables 2,3,4 and 5.
+then only tested on the final (fifth) time period. This forces the algorithms to perform prediction instead of interpolation. 
+The results of these tests are displayed in Tables 2,3,4 and 5.  
 
 | |Logistic Regression|Gradient Boosting|Neural Network|
 |----|----|----|----|
@@ -137,13 +133,13 @@ then only tested on the final (fifth) time period. This forces the algorithms to
 *Standard error of target variable (ZARDiff) is 0.117*  
 
 In the classification task no algorithm stands out as superior across all three tasks. What one algorithm gains in terms of accuracy over another it loses in precision or recall.
-This holds true accross both the training and test scores and the five and eight variable datasets. In the regression task there is extreme uniformity within the test and training scores across both datasets.
-Together this indicates that the scores achieved in this round of ML may be a result of a specific distribution of the target variable instead of good quality training of the algorithms.
+This holds true across the training and test scores and the five and eight variable datasets. In the regression task there is extreme uniformity within the test and training scores across both datasets.
+Together this indicates that the scores achieved in this round of ML may be the result of a specific distribution of the target variable rather than well-trained algorithms.
 
 Investigation into the distribution of the categorical target variable indicates that this is true. 52% of the categorical data lies in bin 4 (within half a standard deviation below the mean) 
 and a further 16% lies in bin 5 (within half a standard deviation above the mean). Please see Figure 8. Thus, 68% of the data lies within half a standard deviation of the mean. 
 For reference, the mean of the series is 0.000125 and the standard deviation is 0.117.
-The histogram of the continuous target variable indicates a similar situation - see Figure 9.  
+The histogram of the continuous version of the ZAR-BTC variable indicates that a similar distribution exists in that series - see Figure 9.  
 
 ![Figure 8](/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Images/ZARDiff_cat_hist.png)  
 *Figure 8: Histogram of the categorical target variable*  
@@ -152,10 +148,11 @@ The histogram of the continuous target variable indicates a similar situation - 
 *Figure 9: Histogram of the continuous target variable*  
 
 Category 4 indicates a change in the ZAR-BTC price of between -0,058% and +0,000125% while category 5 indicates a change of between +0,000125% and +0,059%. Trading fees for market takers on VALR are 0.1% (reference). 
-Thus, any trades made within categories 4 and 5 will lose money and are not worth attempting. However, it may be useful to know whether the price is likely to increase or decrease even within the 0.1% range. 
+Thus, any trades made within categories 4 and 5 will lose money and are not worth attempting. However, it may be useful to know whether the price is likely to increase or decrease, even within the 0.1% range. 
 Re-categorizing the ZAR-BTC variable into 4 categories - according to Equation 2 - allows for this type of analysis. Over the 28 months analyzed here there were a total of 89306 occasions where the price of Bitcoin changed 
-by more than 0.1% in a minute (about 22% of the samples split evenly between increases and decreases) for an average of 3189.5 times per month, or ~101 times per day. However, these occasions only account for 56% of the data lies in category 2 and 22% in category 3 and thus prediction models trained on the data are still vulnerable to bias.
-Although, it may be to a lesser extent because the outlying fields contain a greater proportion of the data. Further, it is also possible to penalize ML algorithms for missing outliers using...
+by more than 0.1% in a minute (about 22% of the samples split almost evenly between increases and decreases) for an average of 3189.5 times per month, or ~101 times per day. 
+However, 56% of the data lies in category 2 and 22% in category 3 and thus prediction models trained on the data are still vulnerable to bias due to the distribution; 
+although, it may be to a lesser extent because the outlying fields contain a greater proportion of the data. This is revealed to be true in the next section.
 
 $$ Ycat=   \left\{
 \begin{array}{ll}
@@ -173,7 +170,9 @@ $$
 ##5. Machine Learning Analysis 2 and conclusions
 Running the same sets of five and eight variables through the same classification algorithms as above with the new four category BTC-ZAR variable as the target variable yields
 results that are similar to the results reported in the Machine Learning Analysis 1 section. They are not depicted here. However, removing the middle section of the data - categories 2 and 3 - yields
-significantly better results. These are presented in Tables 5 and 6.  
+significantly better results. These are presented in Tables 5 and 6. These results show that increases of more than 0.1% in the South African Bitcoin price are algorithmically separable from decreases 
+of more than 0.1% based only on lags of the South African and international markets. If a model that could differentiate between categories 2 and 3, and 1 and 4 were available - the models presented here 
+could be extremely useful to an algorithmic Bitcoin trader. This is recommended for further research. 
 
 
 | |Logistic Regression|Gradient Boosting|Neural Network|
@@ -198,18 +197,7 @@ significantly better results. These are presented in Tables 5 and 6.
 
 
 
-<!-- Images -->
 
-![Figure 3](/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Images/HMap_ZAR_vs_USD_1.png)
-![Figure 4](/Users/pablo/Desktop/Masters/Data_Science/19119461_Data_Science_Project/Images/HMap_USD_vs_USD_1.png)
-
-
-<-- Tables -->
-
-|Var1|Var2|
-|----|----|
-|x1  | x2 |
-|x1  | x2 |
 
 
 

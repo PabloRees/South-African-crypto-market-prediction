@@ -15,6 +15,8 @@ plt.style.use('seaborn')
 from dataclasses import dataclass
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
+import pickle
+
 
 @dataclass
 class classificationScoreHolder:
@@ -55,23 +57,29 @@ def plot_roc_curve(Y, y_predict,Name, label=None ):
 
     return current_roc_curve
 
-def Y_cat_format(df,YVar,binary:bool=None,difference=0.1):
+def Y_cat_format(df,YVar,binary:bool=None,difference=0.1, keep_current:bool=False):
     Y = []
-    for i in df[YVar]:
-        if i > difference:
-            Y.append(4)
 
-        elif i > 0:
-            Y.append(3)
+    if keep_current:
+        for i in df[YVar]:
+            Y.append(i)
+        return Y
+    else:
 
-        elif i > 0-difference:
-            Y.append(2)
+        for i in df[YVar]:
+            if i > difference:
+                Y.append(4)
 
-        else: # i < difference
-            Y.append(1)
+            elif i > 0:
+                Y.append(3)
 
-    return Y
+            elif i > 0-difference:
+                Y.append(2)
 
+            else: # i < difference
+                Y.append(1)
+
+        return Y
 
 def dataSetup(full_df,startDate,remove_duplicate_dates=False):
 
@@ -98,18 +106,13 @@ def setClassifier(clf_type,XVars,binary, random_state=42):
     if not clf_type in clf_types:
         raise ValueError(f"Classifier ML_type chosen but non-classifier model chosen. Please choose from:\n{clf_types}")
 
-
-
     if clf_type == 'clf_SGD':
         clf = SGDClassifier(random_state=random_state, shuffle=True, loss='log', max_iter=10000, fit_intercept=False,
                             learning_rate='adaptive', eta0=0.001, n_iter_no_change=100)
 
-
     elif clf_type == 'clf_logreg':
         clf = LogisticRegression(solver='saga', penalty='elasticnet', max_iter=10000,l1_ratio=0.3,
                                  random_state=random_state,fit_intercept=False)
-
-
 
     elif clf_type == 'clf_MLP':
         clf = MLPClassifier(max_iter=10000, shuffle=True, learning_rate_init=0.0001, learning_rate='adaptive',
@@ -128,8 +131,8 @@ def setClassifier(clf_type,XVars,binary, random_state=42):
         else:
             L_3 = 4
 
-        clf = MLPClassifier(hidden_layer_sizes=(L_1,L_2,L_3), activation='relu', solver='adam', alpha=0.001,
-                            max_iter=10000, random_state=random_state,early_stopping=True,learning_rate='adaptive',
+        clf = MLPClassifier(hidden_layer_sizes=(L_1,200,20,2), activation='relu', solver='lbfgs', alpha=0.0001,
+                            max_iter=10000, random_state=random_state,early_stopping=False,learning_rate='adaptive',
                             n_iter_no_change=100)
 
     elif clf_type == 'clf_KNN':
@@ -211,7 +214,7 @@ def setGridsearch(GS_params, GS_clf_type, random_state =42):
 
 class CSClassifier:
 
-    def __init__(self,full_df,startDate,YVar,XVars,clf,binary,remove_duplicate_dates=False):
+    def __init__(self,full_df,startDate,YVar,XVars,clf,binary,remove_duplicate_dates=False,keep_current_cat=False):
 
         self.YVar = YVar
         self.XVars = XVars
@@ -220,7 +223,7 @@ class CSClassifier:
 
         trainDf, testDf, valDf = dataSetup(full_df, startDate, remove_duplicate_dates=remove_duplicate_dates)
 
-        Y_train = Y_cat_format(trainDf, YVar, binary)
+        Y_train = Y_cat_format(trainDf, YVar, binary, keep_current=keep_current_cat)
         XY_train = trainDf[XVars]
         XY_train['Y_train'] = Y_train
         XY_train.dropna(inplace=True)
@@ -234,14 +237,14 @@ class CSClassifier:
         self.testDf = testDf
         self.valDf = valDf
 
-        Y_test = Y_cat_format(testDf, YVar, binary)
+        Y_test = Y_cat_format(testDf, YVar, binary, keep_current=keep_current_cat)
         XY_test = testDf[XVars]
         XY_test['Y_test'] = Y_test
         XY_test.dropna(inplace=True)
         self.X_test = XY_test[XVars]
         self.Y_test = XY_test['Y_test']
 
-        Y_val = Y_cat_format(valDf, YVar, binary)
+        Y_val = Y_cat_format(valDf, YVar, binary, keep_current=keep_current_cat)
         XY_val = valDf[XVars]
         XY_val['Y_val'] = Y_val
         XY_val.dropna(inplace=True)
@@ -300,7 +303,7 @@ class CSClassifier:
 
 class TSClassifier:
 
-    def __init__(self, full_df, startDate, XVars, YVar, binary, remove_duplicate_dates=False, n_splits=5):
+    def __init__(self, full_df, startDate, XVars, YVar, binary, remove_duplicate_dates=False, n_splits=5, keep_current_cat = False):
 
         if 'Unnamed: 0' in full_df.columns:
             full_df.drop('Unnamed: 0', axis=1, inplace=True)
@@ -316,7 +319,7 @@ class TSClassifier:
         self.YVar = YVar
         self.small_Df = small_Df
         self.X_train = np.array(small_Df[XVars])
-        Y_prepped = Y_cat_format(small_Df, YVar, binary)
+        Y_prepped = Y_cat_format(small_Df, YVar, binary, keep_current=keep_current_cat)
         self.Y_train = np.array(Y_prepped)
         self.tscv = TimeSeriesSplit(n_splits=n_splits)
 
@@ -343,6 +346,9 @@ class TSClassifier:
 
             clone_clf = clone(clf)
             clone_clf.fit(X_train_folds, Y_train_folds)
+
+            #print('Classifier saved')
+
             y_pred = clone_clf.predict(X_train_folds)
 
             print(f"Unique predictions : {pd.Series(y_pred).unique()}")
@@ -364,9 +370,10 @@ class TSClassifier:
 
             else: # binary == False
                 #makes binary score calculations based on a non-binary prediction set
+                numCats = len(XY_train_df['Y_train'].unique())
                 binaryconfMat_current = np.array(
-                    [[np.sum(confMat_current[0:1, 0:1]), np.sum(confMat_current[0:1, 1:2])],
-                     [np.sum(confMat_current[1:2, 0:2]), np.sum(confMat_current[1:2, 1:2])]])
+                    [[np.sum(confMat_current[0:int(numCats/2), 0:int(numCats/2)]), np.sum(confMat_current[0:int(numCats/2), int(numCats/2):numCats])],
+                     [np.sum(confMat_current[int(numCats/2):numCats, 0:numCats]), np.sum(confMat_current[int(numCats/2):numCats, int(numCats/2):numCats])]])
 
                 trainBinaryConfMat.append(binaryconfMat_current)
                 trainAccuracy.append((binaryconfMat_current[0, 0] + binaryconfMat_current[1,1]) /
@@ -428,8 +435,10 @@ class TSClassifier:
 
             else: # binary == False
                 binaryconfMat_current = np.array(
-                    [[np.sum(confMat_current[0:1, 0:1]), np.sum(confMat_current[0:1, 1:2])],
-                     [np.sum(confMat_current[1:2, 0:1]), np.sum(confMat_current[1:2, 1:2])]])
+                    [[np.sum(confMat_current[0:int(numCats / 2), 0:int(numCats / 2)]),
+                      np.sum(confMat_current[0:int(numCats / 2), int(numCats / 2):numCats])],
+                     [np.sum(confMat_current[int(numCats / 2):numCats, 0:numCats]),
+                      np.sum(confMat_current[int(numCats / 2):numCats, int(numCats / 2):numCats])]])
 
                 print(binaryconfMat_current)
 
@@ -471,17 +480,17 @@ class GridSearch:
         self.full_df=full_df
 
     def runGrid_search(self, XVars, YVar, param_grid, split_type, remove_duplicate_dates,binary, n_splits=5,
-                        n_jobs=-1):
+                        n_jobs=-1, keep_current_cat = False):
 
         if split_type == 'CS':
-            Y_train = Y_cat_format(self.trainDf, YVar, binary)
+            Y_train = Y_cat_format(self.trainDf, YVar, binary, keep_current=keep_current_cat)
             XY_train = self.trainDf[XVars]
             XY_train['Y_train'] = Y_train
             XY_train.dropna(inplace=True)
             X_train = XY_train[XVars]
             Y_train = XY_train['Y_train']
 
-            Y_test = Y_cat_format(self.testDf, YVar, binary)
+            Y_test = Y_cat_format(self.testDf, YVar, binary, keep_current=keep_current_cat)
             XY_test = self.testDf[XVars]
             XY_test['Y_test'] = Y_test
             XY_test.dropna(inplace=True)
@@ -498,12 +507,12 @@ class GridSearch:
 
             small_Df_train = small_Df.head(round(len(small_Df) * ((n_splits - 1) / n_splits)))
             X_train = np.array(small_Df_train[XVars])
-            Y_prepped_train = Y_cat_format(small_Df_train, YVar, binary)
+            Y_prepped_train = Y_cat_format(small_Df_train, YVar, binary, keep_current=keep_current_cat)
             Y_train = np.array(Y_prepped_train)
 
             small_Df_test = small_Df.tail(round(len(small_Df) / n_splits))
             X_test = np.array(small_Df_test[XVars])
-            Y_prepped_test = Y_cat_format(small_Df_test, YVar, binary)
+            Y_prepped_test = Y_cat_format(small_Df_test, YVar, binary, keep_current=keep_current_cat)
             Y_test = np.array(Y_prepped_test)
 
             tscv = TimeSeriesSplit(n_splits=n_splits)
@@ -652,7 +661,7 @@ class TSRegressor:
         return trainScores, testScores, valScores
 
 def runML_tests(full_df,startDate,XVars, YVar,crossVals,scoring,ML_type,remove_duplicate_dates, binary,return_prediction, n_splits = 5, clf_type=None,
-                reg_type=None,GS_clf_type=None ,random_state=42, GS_params=None
+                reg_type=None,GS_clf_type=None ,random_state=42, GS_params=None, keep_current_cat = False
                 ):
 
     if 'date' in full_df.columns:
@@ -674,14 +683,14 @@ def runML_tests(full_df,startDate,XVars, YVar,crossVals,scoring,ML_type,remove_d
 
         if ML_type == 'CS_Classifier':
             classifier = CSClassifier(full_df=full_df, startDate=startDate, YVar=YVar, XVars=XVars, clf=clf,
-                                      binary=binary, remove_duplicate_dates=remove_duplicate_dates)
+                                      binary=binary, remove_duplicate_dates=remove_duplicate_dates, keep_current_cat=keep_current_cat)
 
             train_scores,test_scores,val_scores = classifier.testCSClassifier(Name='Train', crossVals=crossVals,
                                                                               scoring=scoring,binary=binary)
 
         else: #ML_type == 'TS_Classifier'
             classifier = TSClassifier(full_df=full_df, startDate=startDate, XVars=XVars, YVar=YVar, binary=binary,
-                                      remove_duplicate_dates=remove_duplicate_dates, n_splits=n_splits)
+                                      remove_duplicate_dates=remove_duplicate_dates, n_splits=n_splits, keep_current_cat=keep_current_cat)
 
             train_scores, test_scores, val_scores = classifier.testTSClassifier(clf=clf)
 

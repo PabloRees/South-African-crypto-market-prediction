@@ -84,6 +84,7 @@ class Shrinkage_Methods:
         sns.set_theme(style='darkgrid')
         sns.lineplot(data = long_results_df,x='alpha', y='value',hue = 'variable', palette='colorblind')
 
+
         plt.legend(list(self.X_variables.columns),loc='upper right')
         plt.savefig(figSavePath)
         plt.show()

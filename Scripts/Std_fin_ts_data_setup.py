@@ -147,6 +147,54 @@ def trim_middle(df,variable,range:list[int],timevar:str):
 
     return df
 
+def mark_middle(df,variable,range:list[float],timevar:str):
+
+    df_3 = df[df[variable] < range[1]]
+    df3 = df_3[df_3[variable] > 0] #this should be between 0 and the upper range
+    df3 = df3.assign(Section_tag=1)
+
+    df4 = df[df[variable] > range[1]] #this should be above the upper range
+    df4 = df4.assign(Section_tag=0)
+
+    df_2 = df[df[variable] > range[0]]
+    df2 = df_2[df_2[variable] < 0] #this should be between 0 and the lower range
+    df2 = df2.assign(Section_tag=1)
+
+    df1 = df[df[variable] < range[0] ] #this should be below the lower range
+    df1 = df1.assign(Section_tag=0)
+
+    df = pd.concat([df1, df2, df3, df4], axis=0)
+    df = df.sort_values(by=timevar,axis=0,ascending=True)
+
+    #df.drop(columns = ['varCat'])
+
+    return df
+
+
+def mark_middle2(df,variable,range:list[float],timevar:str):
+
+    df_3 = df[df[variable] < range[1]]
+    df3 = df_3[df_3[variable] > 0] #this should be between 0 and the upper range
+    df3 = df3.assign(Section_tag2=1)
+
+    df4 = df[df[variable] > range[1]] #this should be above the upper range
+    df4 = df4.assign(Section_tag2=2)
+
+    df_2 = df[df[variable] > range[0]]
+    df2 = df_2[df_2[variable] < 0] #this should be between 0 and the lower range
+    df2 = df2.assign(Section_tag2=-1)
+
+    df1 = df[df[variable] < range[0] ] #this should be below the lower range
+    df1 = df1.assign(Section_tag2=-2)
+
+    df = pd.concat([df1, df2, df3, df4], axis=0)
+    df = df.sort_values(by=timevar,axis=0,ascending=True)
+
+    #df.drop(columns = ['varCat'])
+
+    return df
+
+
 def plotOverTime(df,var):
     df['Day'] = df['Timestamp'].map(lambda x: str(x).split(' ')[-1])
     df = df[df['Day'] == '00:00:00+00:00']
