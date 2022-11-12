@@ -131,7 +131,7 @@ def setClassifier(clf_type,XVars,binary, random_state=42):
         else:
             L_3 = 4
 
-        clf = MLPClassifier(hidden_layer_sizes=(L_1,200,20,2), activation='relu', solver='lbfgs', alpha=0.0001,
+        clf = MLPClassifier(hidden_layer_sizes=(L_1,200,20,2), activation='relu', solver='adam', alpha=0.0001,
                             max_iter=10000, random_state=random_state,early_stopping=False,learning_rate='adaptive',
                             n_iter_no_change=100)
 

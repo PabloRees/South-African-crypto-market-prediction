@@ -170,7 +170,6 @@ def mark_middle(df,variable,range:list[float],timevar:str):
 
     return df
 
-
 def mark_middle2(df,variable,range:list[float],timevar:str):
 
     df_3 = df[df[variable] < range[1]]
@@ -191,6 +190,19 @@ def mark_middle2(df,variable,range:list[float],timevar:str):
     df = df.sort_values(by=timevar,axis=0,ascending=True)
 
     #df.drop(columns = ['varCat'])
+
+    return df
+
+def up_down(df,variable,timevar:str):
+
+    df1 = df[df[variable] < 0 ] #this should be below 0
+    df1 = df1.assign(Updown_tag=0)
+
+    df2 = df[df[variable] >0 ] #this should be above 0
+    df2 = df2.assign(Updown_tag=1)
+
+    df = pd.concat([df1, df2], axis=0)
+    df = df.sort_values(by=timevar,axis=0,ascending=True)
 
     return df
 

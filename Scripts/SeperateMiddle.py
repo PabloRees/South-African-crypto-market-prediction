@@ -1,6 +1,6 @@
 import pandas as pd
 from Descriptive_Statistics_Functions import setup_and_graph_fiat, plotOverTime, categorical_heat_map_from_conf_mat
-from Std_fin_ts_data_setup import mark_middle, mark_middle2
+from Std_fin_ts_data_setup import mark_middle, mark_middle2, up_down
 from Shrinkage_methods import Shrinkage_Methods
 from ML_Package import runML_tests
 import numpy as np
@@ -19,15 +19,17 @@ BTCFiat = setup_and_graph_fiat(BTCUSD,BTCZAR,startDate,endDate,diffSavePath=f'{i
 
 BTCFiat = mark_middle(BTCFiat,'ZARDiff',[-0.1,0.1],'Timestamp')
 BTCFiat = mark_middle2(BTCFiat,'ZARDiff',[-0.1,0.1],'Timestamp')
+BTCFiat = up_down(BTCFiat,'ZARDiff','Timestamp')
 
-ax = BTCFiat['Section_tag'].plot.hist(bins=2, alpha=0.9)
+
+ax = BTCFiat['Updown_tag'].plot.hist(bins=2, alpha=0.9)
 ax.plot()
 plt.show()
 
 print('\nFull set\n')
-print(BTCFiat['Section_tag'].value_counts())
-for i in BTCFiat['Section_tag'].value_counts():
-    print(f'{i/len(BTCFiat["Section_tag"])}')
+print(BTCFiat['Updown_tag'].value_counts())
+for i in BTCFiat['Updown_tag'].value_counts():
+    print(f'{i/len(BTCFiat["Updown_tag"])}')
 
 for i in BTCFiat.columns:
     print(i)
@@ -99,11 +101,11 @@ AugmentedVars = refinedVolVars + ['NN_Section_pred','NN2_Section_pred','GB_Secti
 
 #Testing for ability to predict 4 categories around the middle (i.e. non-binary)
 print('\n\nNon-binary tests ____________________________________________________________')
-Shrinkage = Shrinkage_Methods(BTCFiat,non_binary ,'Section_tag2', 10 )
+Shrinkage = Shrinkage_Methods(BTCFiat,non_binary ,'Updown_tag', 10 )
 Shrinkage.Elastic_Gridsearch(0.1,figSavePath=f'{imageFolderPath}/augmentedMidPredShrink.jpeg',show_coefficients=True,minAlpha=0,maxAlpha=10)
 
 print('##Non-binary Neural Network Tests\n___________________________________________________________________________')
-ML_2(BTCFiat,'clf_NN',startDate,non_binary,'Section_tag2')
+ML_2(BTCFiat,'clf_NN',startDate,non_binary,'Updown_tag')
 
 print('##Non-binary Gradient Boosting Tests\n___________________________________________________________________________')
-ML_2(BTCFiat,'clf_GradientBoosting',startDate,non_binary,'Section_tag2')
+ML_2(BTCFiat,'clf_GradientBoosting',startDate,non_binary,'Updown_tag')
